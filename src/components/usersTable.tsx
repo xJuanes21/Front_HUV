@@ -1,144 +1,154 @@
 'use client';
 
-import React, { useState, type FormEvent } from 'react';
+import React, { useState, useEffect, type FormEvent } from 'react';
+import { usersService, type User, type CreateUserData, type UpdateUserData } from '@/lib/usersService';
+import { useAuth } from '@/contexts/AuthContext';
 
+// Adaptamos los tipos para que coincidan con tu backend
 type UserStatus = 'Activo' | 'Inactivo';
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  department: string;
-  status: UserStatus;
-  createdAt: string; // YYYY-MM-DD
-}
-
 interface FormDataShape {
-  name: string;
-  email: string;
-  role: string;
-  department: string;
-  status: UserStatus;
+  nombre: string;
+  correo: string;
+  password: string;
+  telefono: string;
+  rol: 'admin' | 'user' | 'editor';
+  status?: UserStatus;
 }
 
 const UsersTable: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 1,
-      name: 'Dr. Ana María López',
-      email: 'ana.lopez@huv.gov.co',
-      role: 'Supervisor Médico',
-      department: 'Banco de Sangre',
-      status: 'Activo',
-      createdAt: '2024-01-15',
-    },
-    {
-      id: 2,
-      name: 'Dr. Carlos Mendoza',
-      email: 'carlos.mendoza@huv.gov.co',
-      role: 'Médico Especialista',
-      department: 'Hematología',
-      status: 'Activo',
-      createdAt: '2024-02-20',
-    },
-    {
-      id: 3,
-      name: 'Lic. María González',
-      email: 'maria.gonzalez@huv.gov.co',
-      role: 'Técnico de Laboratorio',
-      department: 'Banco de Sangre',
-      status: 'Inactivo',
-      createdAt: '2024-01-30',
-    },
-    {
-      id: 4,
-      name: 'Dr. Roberto Silva',
-      email: 'roberto.silva@huv.gov.co',
-      role: 'Coordinador',
-      department: 'Control de Calidad',
-      status: 'Activo',
-      createdAt: '2024-03-10',
-    },
-  ]);
-
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormDataShape>({
-    name: '',
-    email: '',
-    role: '',
-    department: '',
+    nombre: '',
+    correo: '',
+    password: '',
+    telefono: '',
+    rol: 'user',
     status: 'Activo',
   });
 
+  const { hasRole } = useAuth();
+
+  // Mapeo de roles para mostrar nombres más descriptivos
+  const roleNames: { [key: string]: string } = {
+    'admin': 'Administrador',
+    'user': 'Usuario Regular',
+    'editor': 'Editor'
+  };
+
   const departments: string[] = ['Banco de Sangre', 'Hematología', 'Control de Calidad', 'Registro de Activos'];
-  const roles: string[] = ['Supervisor Médico', 'Médico Especialista', 'Técnico de Laboratorio', 'Coordinador', 'Administrativo'];
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  // Cargar usuarios al montar el componente
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
-    if (editingUser) {
-      setUsers((prev) =>
-        prev.map((user) => (user.id === editingUser.id ? { ...user, ...formData } : user)),
-      );
-    } else {
-      const newId = users.length ? Math.max(...users.map((u) => u.id)) + 1 : 1;
-      const newUser: User = {
-        id: newId,
-        ...formData,
-        createdAt: new Date().toISOString().split('T')[0],
-      };
-      setUsers((prev) => [...prev, newUser]);
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const usersData = await usersService.getAllUsers();
+      setUsers(usersData);
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar usuarios');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    resetForm();
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError('');
+
+    try {
+      if (editingUser) {
+        // Actualizar usuario (sin password si no se proporciona)
+        const updateData: UpdateUserData = { ...formData };
+        if (!updateData.password) {
+          delete updateData.password;
+        }
+        const updatedUser = await usersService.updateUser(editingUser.id, updateData);
+        setUsers(prev => prev.map(user => user.id === editingUser.id ? updatedUser : user));
+      } else {
+        // Crear nuevo usuario
+        const newUser = await usersService.createUser(formData as CreateUserData);
+        setUsers(prev => [...prev, newUser]);
+      }
+      resetForm();
+    } catch (err: any) {
+      setError(err.message || 'Error al guardar usuario');
+    }
   };
 
   const handleEdit = (user: User) => {
     setEditingUser(user);
     setFormData({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      department: user.department,
-      status: user.status,
+      nombre: user.nombre,
+      correo: user.correo,
+      password: '', // No mostramos el password actual por seguridad
+      telefono: user.telefono,
+      rol: user.rol,
+      status: 'Activo', // Podemos mantener este campo si lo quieres
     });
     setShowModal(true);
   };
 
-  const handleDelete = (id: number) => {
-    setUsers((prev) => prev.filter((user) => user.id !== id));
-    setShowDeleteModal(null);
+  const handleDelete = async (id: number) => {
+    try {
+      await usersService.deleteUser(id);
+      setUsers(prev => prev.filter(user => user.id !== id));
+      setShowDeleteModal(null);
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar usuario');
+    }
   };
 
   const resetForm = () => {
     setFormData({
-      name: '',
-      email: '',
-      role: '',
-      department: '',
+      nombre: '',
+      correo: '',
+      password: '',
+      telefono: '',
+      rol: 'user',
       status: 'Activo',
     });
     setEditingUser(null);
     setShowModal(false);
+    setError('');
   };
 
-  const getStatusBadge = (status: UserStatus): string => {
-    return status === 'Activo'
-      ? 'bg-green-100 text-green-800 border-green-200'
-      : 'bg-red-100 text-red-800 border-red-200';
+  const getStatusBadge = (user: User): string => {
+    // Podemos determinar el estado basado en alguna lógica
+    // Por ahora, todos están activos a menos que tengas un campo específico
+    return 'bg-green-100 text-green-800 border-green-200';
   };
 
   const getInitials = (name: string): string => {
     return name
       .split(' ')
-      .map((n) => n[0])
+      .map(n => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const getDisplayRole = (rol: string): string => {
+    return roleNames[rol] || rol;
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -149,17 +159,26 @@ const UsersTable: React.FC = () => {
             <h2 className="text-xl font-bold text-white">Gestión de Usuarios</h2>
             <p className="text-blue-200 text-sm mt-1">Sistema MIS - Banco de Sangre</p>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="mt-3 sm:mt-0 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-            </svg>
-            <span>Nuevo Usuario</span>
-          </button>
+          {hasRole('admin') && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="mt-3 sm:mt-0 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+              </svg>
+              <span>Nuevo Usuario</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 m-4 rounded">
+          {error}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6 bg-gray-50 border-b">
@@ -185,9 +204,9 @@ const UsersTable: React.FC = () => {
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600">Usuarios Activos</p>
+              <p className="text-sm text-gray-600">Administradores</p>
               <p className="text-2xl font-bold text-gray-900">
-                {users.filter((u) => u.status === 'Activo').length}
+                {users.filter(u => u.rol === 'admin').length}
               </p>
             </div>
           </div>
@@ -195,15 +214,15 @@ const UsersTable: React.FC = () => {
 
         <div className="bg-white p-4 rounded-lg border">
           <div className="flex items-center">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <svg className="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.18 5 4.05 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600">Usuarios Inactivos</p>
+              <p className="text-sm text-gray-600">Usuarios</p>
               <p className="text-2xl font-bold text-gray-900">
-                {users.filter((u) => u.status === 'Inactivo').length}
+                {users.filter(u => u.rol === 'user').length}
               </p>
             </div>
           </div>
@@ -217,10 +236,12 @@ const UsersTable: React.FC = () => {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creación</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+              {hasRole('admin') && (
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -229,50 +250,49 @@ const UsersTable: React.FC = () => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium text-sm">
-                      {getInitials(user.name)}
+                      {getInitials(user.nombre)}
                     </div>
                     <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
+                      <div className="text-sm font-medium text-gray-900">{user.nombre}</div>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.role}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.department}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {getDisplayRole(user.rol)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.telefono}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(
-                      user.status,
-                    )}`}
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(user)}`}
                   >
-                    {user.status}
+                    Activo
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(user.createdAt).toLocaleDateString('es-ES')}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex items-center justify-end space-x-2">
-                    <button
-                      onClick={() => handleEdit(user)}
-                      className="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors"
-                      title="Editar usuario"
-                    >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setShowDeleteModal(user.id)}
-                      className="text-red-600 hover:text-red-900 p-1 rounded transition-colors"
-                      title="Eliminar usuario"
-                    >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.correo}</td>
+                {hasRole('admin') && (
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex items-center justify-end space-x-2">
+                      <button
+                        onClick={() => handleEdit(user)}
+                        className="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors"
+                        title="Editar usuario"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteModal(user.id)}
+                        className="text-red-600 hover:text-red-900 p-1 rounded transition-colors"
+                        title="Eliminar usuario"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -281,7 +301,7 @@ const UsersTable: React.FC = () => {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="bg-blue-800 px-6 py-4">
               <h3 className="text-lg font-semibold text-white">
@@ -295,9 +315,9 @@ const UsersTable: React.FC = () => {
                 <input
                   type="text"
                   required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  value={formData.nombre}
+                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  className="w-full px-3 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   placeholder="Dr. Juan Pérez"
                 />
               </div>
@@ -307,10 +327,36 @@ const UsersTable: React.FC = () => {
                 <input
                   type="email"
                   required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  value={formData.correo}
+                  onChange={(e) => setFormData({ ...formData, correo: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   placeholder="juan.perez@huv.gov.co"
+                />
+              </div>
+
+              {!editingUser && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+                  <input
+                    type="password"
+                    required={!editingUser}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    placeholder="••••••••"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+                <input
+                  type="tel"
+                  required
+                  value={formData.telefono}
+                  onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="3001234567"
                 />
               </div>
 
@@ -318,45 +364,13 @@ const UsersTable: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Rol</label>
                 <select
                   required
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  value={formData.rol}
+                  onChange={(e) => setFormData({ ...formData, rol: e.target.value as 'admin' | 'user' | 'editor' })}
+                  className="w-full px-3 py-2 border border-gray-300  text-black rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 >
-                  <option value="">Seleccionar rol</option>
-                  {roles.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
-                <select
-                  required
-                  value={formData.department}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
-                  <option value="">Seleccionar departamento</option>
-                  {departments.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as UserStatus })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
-                  <option value="Activo">Activo</option>
-                  <option value="Inactivo">Inactivo</option>
+                  <option value="user">Usuario Regular</option>
+                  <option value="editor">Editor</option>
+                  <option value="admin">Administrador</option>
                 </select>
               </div>
 
@@ -382,7 +396,7 @@ const UsersTable: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center mb-4">
@@ -407,7 +421,7 @@ const UsersTable: React.FC = () => {
                   Cancelar
                 </button>
                 <button
-                  onClick={() => handleDelete(showDeleteModal!)}
+                  onClick={() => handleDelete(showDeleteModal)}
                   className="flex-1 px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
                 >
                   Eliminar

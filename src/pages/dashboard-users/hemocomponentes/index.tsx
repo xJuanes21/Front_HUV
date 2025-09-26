@@ -8,8 +8,7 @@ export default function DashboardAdmin() {
                 <h1 className="text-black text-3xl font-semibold">Hemocomponentes</h1>
             </div>
             <UnderConstruction 
-                title="BAJO CONSTRUCCIÓN"
-                subtitle="Módulo de Hemocomponentes"
+  
             />
         </DashboardLayoutUsers>
     )

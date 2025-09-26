@@ -3,6 +3,7 @@
 import { JSX, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Header from '@/components/shared/Header';
 
 type MenuItem = {
   id: string;
@@ -132,56 +133,12 @@ export default function DashboardLayoutUsers({ children }: { children: ReactNode
       )}
 
       {/* Contenedor principal: header + contenido con scroll */}
-      <div className="flex min-h-screen flex-col">
+       <div className="flex min-h-screen flex-col">
         {/* Header */}
-        <header className="sticky top-0 z-30 bg-blue-800 text-white shadow-lg">
-          <div className="flex items-center justify-between px-4 lg:px-8 py-4">
-            {/* Botón menú móvil */}
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-md hover:bg-blue-700 transition-colors"
-              aria-label="Abrir menú"
-              aria-expanded={sidebarOpen}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-
-            {/* Título dinámico + subtítulo fijo  */}
-            <div className="flex-1 lg:flex-none min-w-0">
-              <h2 className="text-xl font-semibold truncate">{currentSection}</h2>
-              <p className="text-blue-200 text-sm">MIS - BANCO DE SANGRE</p>
-            </div>
-
-            {/* Estado + Usuario */}
-            <div className="flex items-center space-x-4">
-              <div className="hidden md:flex items-center space-x-2 bg-green-500 px-3 py-1 rounded-full">
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-                <span className="text-sm font-medium">Sistema Activo</span>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <div className="hidden sm:block text-right">
-                  <p className="text-sm font-medium">Dr. Ana María López</p>
-                  <p className="text-xs text-blue-200">Supervisor Médico</p>
-                </div>
-                <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                  AM
-                </div>
-                <button
-                  className="hidden lg:block text-blue-200 hover:text-white transition-colors"
-                  aria-label="Abrir menú de usuario"
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M7 10l5 5 5-5z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-
+        <Header
+          currentSection={currentSection}
+          onMenuToggle={() => setSidebarOpen(true)}
+        />
         {/* Área de contenido: ocupa el resto y scroll propio */}
         <main className="flex-1 overflow-y-auto p-4 lg:p-8">{children}</main>
       </div>

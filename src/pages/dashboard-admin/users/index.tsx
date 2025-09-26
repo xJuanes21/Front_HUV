@@ -2,9 +2,8 @@ import { useEffect } from "react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/router';
 import UsersTable from "@/components/usersTable";
-import DashboardLayout from "./layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import CTAWidget from "@/components/CTAWidget";
+import DashboardLayout from "../layout";
 
 export default function DashboardAdmin() {
     const { user, isAuthenticated, isLoading } = useAuth();
@@ -21,18 +20,10 @@ export default function DashboardAdmin() {
 
             <DashboardLayout>
                 <div className="mb-8">
-                    <h1 className="text-black text-3xl font-semibold">Bienvenido al panel de Adminitrador</h1>
-                    <p className="text-gray-400">En este dashboard podras adminitrar los usuarios que tienen acceso al sistema</p>
+                    <h1 className="text-black text-3xl font-semibold">Panel de Usuarios</h1>
+                    <p className="text-gray-400">Aqui podras administrar los usuarios, crear y asignar formularios. Para registrar un nuevo usuario, haz clic en el boton de abajo.</p>
                 </div>
-
-                <CTAWidget
-                    title="Agregar Usuario"
-                    description="Crea nuevos usuarios para tu plataforma de forma rápida y sencilla"
-                    route="/dashboard-admin/users"
-                    icon="users"
-                    color="blue"
-                />
-
+                <UsersTable />
             </DashboardLayout>
         </ProtectedRoute>
     )
