@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/router';
-import UsersTable from "@/components/usersTable";
+import UsersTable from "@/components/users-module/UsersTable";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "../layout";
 
