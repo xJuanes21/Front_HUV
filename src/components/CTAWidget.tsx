@@ -5,7 +5,7 @@ interface CTAWidgetProps {
   title: string;
   description: string;
   route: string;
-  icon?: 'plus' | 'users' | 'settings' | 'chart' | 'file';
+  icon?: 'plus' | 'users' | 'settings' | 'chart' | 'file' | 'documents';
   color?: 'blue' | 'green' | 'purple' | 'orange' | 'red';
   className?: string;
 }
@@ -24,6 +24,7 @@ const CTAWidget: React.FC<CTAWidgetProps> = ({
     plus: Plus,
     users: Users,
     settings: Settings,
+    documents: FileText,
     chart: BarChart3,
     file: FileText
   };

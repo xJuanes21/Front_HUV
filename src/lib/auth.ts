@@ -1,4 +1,4 @@
-// lib/auth.ts
+// lib/auth.ts - VERSIÓN CORREGIDA
 export interface User {
   id: number;
   nombre: string;
@@ -57,13 +57,23 @@ class AuthService {
     return data.user;
   }
 
-  // Verificar si el token está expirado (simple check)
-  isTokenExpired(token: string): boolean {
+  // ❌ ELIMINAR esta función - Los tokens Sanctum no son JWT
+  // isTokenExpired(token: string): boolean {
+  //   try {
+  //     const payload = JSON.parse(atob(token.split('.')[1]));
+  //     return payload.exp * 1000 < Date.now();
+  //   } catch {
+  //     return true;
+  //   }
+  // }
+
+  // ✅ NUEVO: Verificar token llamando al backend
+  async verifyToken(token: string): Promise<boolean> {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.exp * 1000 < Date.now();
-    } catch {
+      await this.getCurrentUser(token);
       return true;
+    } catch {
+      return false;
     }
   }
 }

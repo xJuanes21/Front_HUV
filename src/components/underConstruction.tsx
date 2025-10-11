@@ -46,13 +46,10 @@ const UnderConstruction = ({
           {/* Status Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-800 rounded-full text-sm font-medium mb-6">
             <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-            En desarrollo activo
+            Aun no esta disponible
           </div>
 
-          {/* Title */}
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">{title}</h1>
-          <p className="text-gray-600 mb-8 text-lg">{moduleName}</p>
-
+        
           {/* Progress indicators */}
           <div className="space-y-4 mb-8">
             <div className="flex items-center justify-between text-sm text-gray-600">

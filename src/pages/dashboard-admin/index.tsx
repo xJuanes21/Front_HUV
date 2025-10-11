@@ -24,14 +24,22 @@ export default function DashboardAdmin() {
                     <h1 className="text-black text-3xl font-semibold">Bienvenido al panel de Adminitrador</h1>
                     <p className="text-gray-400">En este dashboard podras adminitrar los usuarios que tienen acceso al sistema</p>
                 </div>
-
-                <CTAWidget
-                    title="Agregar Usuario"
-                    description="Crea nuevos usuarios para tu plataforma de forma rápida y sencilla"
-                    route="/dashboard-admin/users"
-                    icon="users"
-                    color="blue"
-                />
+                <div className="gap-6 grid grid-rows-1">
+                    <CTAWidget
+                        title="Agregar Usuario"
+                        description="Crea nuevos usuarios para tu plataforma de forma rápida y sencilla"
+                        route="/dashboard-admin/users"
+                        icon="users"
+                        color="blue"
+                    />
+                    <CTAWidget
+                        title="Agregar Documentos"
+                        description="Crea y administra documentos personalizados para tu plataforma"
+                        route="/dashboard-admin/documents"
+                        icon="documents"
+                        color="green"
+                    />
+                </div>
 
             </DashboardLayout>
         </ProtectedRoute>

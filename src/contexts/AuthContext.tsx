@@ -1,4 +1,4 @@
-// contexts/AuthContext.tsx
+// contexts/AuthContext.tsx - VERSIÓN FINAL
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -12,6 +12,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   hasRole: (role: string) => boolean;
+  isVerifying: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,25 +20,35 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
-    // Verificar si hay token al cargar la app
-    const savedToken = localStorage.getItem('auth_token');
-    if (savedToken && !authService.isTokenExpired(savedToken)) {
-      setToken(savedToken);
-      // Obtener información del usuario
-      authService.getCurrentUser(savedToken)
-        .then(setUser)
-        .catch(() => {
-          localStorage.removeItem('auth_token');
-          setToken(null);
-        })
-        .finally(() => setIsLoading(false));
-    } else {
-      localStorage.removeItem('auth_token');
-      setIsLoading(false);
-    }
+    const verifyAuth = async () => {
+      const savedToken = localStorage.getItem('auth_token');
+      
+      if (!savedToken) {
+        setIsVerifying(false);
+        return;
+      }
+
+      try {
+        // ✅ VERIFICAR TOKEN CON EL BACKEND (no con JWT decode)
+        const userData = await authService.getCurrentUser(savedToken);
+        setUser(userData);
+        setToken(savedToken);
+      } catch (error) {
+        console.error('Token inválido:', error);
+        // Token inválido, limpiar
+        localStorage.removeItem('auth_token');
+        setToken(null);
+        setUser(null);
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
+    verifyAuth();
   }, []);
 
   const login = async (correo: string, password: string) => {
@@ -47,18 +58,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(authData.user);
       setToken(authData.access_token);
       localStorage.setItem('auth_token', authData.access_token);
+    } catch (error) {
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
   const logout = async () => {
-    if (token) {
-      await authService.logout(token);
+    setIsLoading(true);
+    try {
+      if (token) {
+        await authService.logout(token);
+      }
+    } catch (error) {
+      console.error('Error durante logout:', error);
+    } finally {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('auth_token');
+      setIsLoading(false);
     }
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('auth_token');
   };
 
   const hasRole = (role: string): boolean => {
@@ -73,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     isAuthenticated: !!user && !!token,
     hasRole,
+    isVerifying,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
