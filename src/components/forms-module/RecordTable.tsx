@@ -3,6 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { DynamicForm } from './types/types';
 import { formsService } from '@/lib/formService';
+import Pagination from '@/components/ui/Pagination';
+import { useToast } from '@/components/ui/toast/ToastContext';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 interface RecordsTableProps {
   form: DynamicForm;
@@ -16,6 +19,10 @@ const RecordsTable: React.FC<RecordsTableProps> = ({ form, documentId, onRecords
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const { success, error: toastError } = useToast();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   useEffect(() => {
     loadRecords();
@@ -32,6 +39,7 @@ const RecordsTable: React.FC<RecordsTableProps> = ({ form, documentId, onRecords
     } catch (err: any) {
       setError(err.message || 'Error al cargar registros');
       setRecords([]);
+      toastError(err.message || 'Error al cargar registros');
     } finally {
       setLoading(false);
     }
@@ -46,18 +54,16 @@ const RecordsTable: React.FC<RecordsTableProps> = ({ form, documentId, onRecords
   };
 
   const handleDelete = async (recordId: number) => {
-    if (!confirm('¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer.')) {
-      return;
-    }
-
     try {
       setDeletingId(recordId);
       setError('');
       await formsService.deleteFormRecord(documentId, recordId);
       setRecords(prev => prev.filter(r => r.id !== recordId));
       onRecordsChange?.();
+      success('Registro eliminado');
     } catch (err: any) {
       setError(err.message || 'Error al eliminar registro');
+      toastError(err.message || 'Error al eliminar registro');
     } finally {
       setDeletingId(null);
     }
@@ -74,7 +80,7 @@ const RecordsTable: React.FC<RecordsTableProps> = ({ form, documentId, onRecords
           year: 'numeric'
         });
       case 'boolean':
-        return value ? '✓ Sí' : '✗ No';
+        return value ? 'Sí' : 'No';
       case 'decimal':
       case 'number':
         return typeof value === 'number' ? value.toLocaleString('es-CO') : value;
@@ -148,7 +154,7 @@ const RecordsTable: React.FC<RecordsTableProps> = ({ form, documentId, onRecords
           <div className="flex items-center">
             <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-md">
               <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-4">
@@ -218,7 +224,7 @@ const RecordsTable: React.FC<RecordsTableProps> = ({ form, documentId, onRecords
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {records.map((record) => (
+              {records.slice((page - 1) * pageSize, page * pageSize).map((record) => (
                 <tr key={record.id} className="hover:bg-blue-50 transition-colors duration-150">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
@@ -244,7 +250,7 @@ const RecordsTable: React.FC<RecordsTableProps> = ({ form, documentId, onRecords
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleDelete(record.id)}
+                        onClick={() => setConfirmDeleteId(record.id)}
                         disabled={deletingId === record.id}
                         className="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50 transition-all duration-150 transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Eliminar registro"
@@ -263,6 +269,15 @@ const RecordsTable: React.FC<RecordsTableProps> = ({ form, documentId, onRecords
               ))}
             </tbody>
           </table>
+          {records.length > pageSize && (
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={records.length}
+              onPageChange={(p) => setPage(p)}
+              onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+            />
+          )}
         </div>
       )}
     </div>

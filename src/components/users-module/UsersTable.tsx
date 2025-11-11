@@ -7,12 +7,14 @@ import DeleteUserModal from './modals/DeleteUserModal';
 import { UserFormData } from './types/types';
 import CreateUserModal from './modals/CreateUserModal';
 import EditUserModal from './modals/EditUserModal';
+import { useToast } from '@/components/ui/toast/ToastContext';
+import Pagination from '@/components/ui/Pagination';
 
 const UsersTable: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
-  
+
   // Estados para modales
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
@@ -20,8 +22,11 @@ const UsersTable: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   const { hasRole } = useAuth();
+  const { success, error: toastError } = useToast();
 
   const roleNames: { [key: string]: string } = {
     'admin': 'Administrador',
@@ -55,8 +60,10 @@ const UsersTable: React.FC = () => {
       const newUser = await usersService.createUser(formData as CreateUserData);
       setUsers(prev => [...prev, newUser]);
       closeModals();
+      success('Usuario creado correctamente');
     } catch (err: any) {
       setError(err.message || 'Error al crear usuario');
+      toastError(err.message || 'Error al crear usuario');
       throw err;
     } finally {
       setActionLoading(false);
@@ -66,7 +73,7 @@ const UsersTable: React.FC = () => {
   // Manejar actualización de usuario
   const handleUpdateUser = async (formData: UserFormData) => {
     if (!editingUser) return;
-    
+
     setActionLoading(true);
     setError('');
 
@@ -76,12 +83,14 @@ const UsersTable: React.FC = () => {
       if (!updateData.password) {
         delete updateData.password;
       }
-      
+
       const updatedUser = await usersService.updateUser(editingUser.id, updateData);
       setUsers(prev => prev.map(user => user.id === editingUser.id ? updatedUser : user));
       closeModals();
+      success('Usuario actualizado');
     } catch (err: any) {
       setError(err.message || 'Error al actualizar usuario');
+      toastError(err.message || 'Error al actualizar usuario');
       throw err;
     } finally {
       setActionLoading(false);
@@ -97,8 +106,10 @@ const UsersTable: React.FC = () => {
       await usersService.deleteUser(userId);
       setUsers(prev => prev.filter(user => user.id !== userId));
       closeModals();
+      success('Usuario eliminado');
     } catch (err: any) {
       setError(err.message || 'Error al eliminar usuario');
+      toastError(err.message || 'Error al eliminar usuario');
       throw err;
     } finally {
       setActionLoading(false);
@@ -245,7 +256,7 @@ const UsersTable: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user) => (
+              {users.slice((page - 1) * pageSize, page * pageSize).map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -296,6 +307,15 @@ const UsersTable: React.FC = () => {
             </tbody>
           </table>
         </div>
+        {users.length > pageSize && (
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={users.length}
+            onPageChange={(p) => setPage(p)}
+            onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+          />
+        )}
       </div>
 
       {/* Modal para Crear */}

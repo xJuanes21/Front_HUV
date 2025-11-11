@@ -4,6 +4,7 @@ import { JSX, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Header from '@/components/shared/Header';
+import { Home, FileText, X } from 'lucide-react';
 
 type MenuItem = {
   id: string;
@@ -17,21 +18,13 @@ const menuItems: MenuItem[] = [
     id: 'inicio',
     name: 'Inicio',
     href: '/dashboard-users',
-    icon: (
-      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-      </svg>
-    ),
+    icon: <Home className="w-6 h-6" />,
   },
   {
     id: 'hemocomponentes',
-    name: 'Hemocomponentes',
+    name: 'Mis Documentos',
     href: '/dashboard-users/hemocomponentes',
-    icon: (
-      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
-      </svg>
-    ),
+    icon: <FileText className="w-6 h-6" />,
   },
 ];
 
@@ -50,8 +43,8 @@ export default function DashboardLayoutUsers({ children }: { children: ReactNode
 
   // Cierra el sidebar en móvil al cambiar de ruta
   useEffect(() => {
-    if (sidebarOpen) setSidebarOpen(false);
-  }, [pathname, sidebarOpen]);
+    setSidebarOpen(false);
+  }, [pathname]);
 
   // Regla de activo:
   // - Para el rootHref (Inicio): match EXACTO
@@ -77,22 +70,40 @@ export default function DashboardLayoutUsers({ children }: { children: ReactNode
   return (
     // Reservamos el espacio del sidebar en desktop
     <div className="min-h-screen bg-gray-50 lg:pl-80">
+      {/* Overlay móvil para cerrar (debe ir ANTES del sidebar para estar debajo) */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          aria-label="Cerrar menú"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar fijo (drawer en mobile) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-80 transform bg-blue-800 shadow-lg transition-transform duration-300 ease-in-out
+        className={`fixed inset-y-0 left-0 z-50 w-80 transform bg-blue-800 shadow-xl transition-transform duration-300 ease-in-out pt-20 lg:pt-0
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
         aria-label="Barra lateral"
       >
+        {/* Botón cerrar móvil (dentro del sidebar) */}
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="absolute top-4 right-4 lg:hidden bg-white/10 hover:bg-white/20 rounded-lg p-2 transition-colors"
+          aria-label="Cerrar menú"
+        >
+          <X className="w-5 h-5 text-white" />
+        </button>
+
         {/* Logo Section*/}
-        <div className="flex flex-col items-center p-6 bg-blue-800">
-          <div className="w-24 h-24 bg-white rounded-2xl mb-4 p-3 shadow-lg">
+        <div className="flex flex-col items-center px-6 py-8 bg-blue-900/30">
+          <div className="w-28 h-28 bg-white rounded-2xl mb-4 p-4 shadow-lg">
             <img
               src="/logo-hospital.png"
               alt="Logo del Hospital"
               className="w-full h-full object-contain"
             />
           </div>
-          <h1 className="text-white text-xl font-bold text-center">
+          <h1 className="text-white text-lg font-bold text-center leading-tight">
             MIS - BANCO DE SANGRE
           </h1>
         </div>
@@ -104,10 +115,11 @@ export default function DashboardLayoutUsers({ children }: { children: ReactNode
               <li key={item.id}>
                 <Link
                   href={item.href}
+                  onClick={() => setSidebarOpen(false)}
                   className={`flex items-center px-4 py-3 rounded-lg text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/30
                     ${
                       (item as any).active
-                        ? 'bg-blue-600 bg-opacity-50 border-l-4 border-blue-300'
+                        ? 'bg-blue-600 bg-opacity-50 border-l-4 border-blue-300 shadow-lg'
                         : 'hover:bg-blue-700 hover:bg-opacity-50'
                     }`}
                 >
@@ -119,42 +131,25 @@ export default function DashboardLayoutUsers({ children }: { children: ReactNode
           </ul>
         </nav>
 
-        {/* Footer por implementar */}
+        {/* Footer información */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-blue-900/30 border-t border-blue-700/50">
+          <p className="text-xs text-blue-200 text-center">
+            Hospital Universitario del Valle
+          </p>
+        </div>
       </aside>
-
-      {/* Overlay móvil para cerrar */}
-      {sidebarOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 backdrop-blur-sm lg:hidden"
-          aria-label="Cerrar menú"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
 
       {/* Contenedor principal: header + contenido con scroll */}
        <div className="flex min-h-screen flex-col">
         {/* Header */}
         <Header
           currentSection={currentSection}
-          onMenuToggle={() => setSidebarOpen(true)}
+          onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+          sidebarOpen={sidebarOpen}
         />
         {/* Área de contenido: ocupa el resto y scroll propio */}
         <main className="flex-1 overflow-y-auto p-4 lg:p-8">{children}</main>
       </div>
-
-      {/* Botón cerrar (móvil) */}
-      {sidebarOpen && (
-        <button
-          onClick={() => setSidebarOpen(false)}
-          className="fixed top-4 right-4 z-50 lg:hidden bg-white rounded-full p-2 shadow-lg"
-          aria-label="Cerrar menú"
-        >
-          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      )}
     </div>
   );
 }

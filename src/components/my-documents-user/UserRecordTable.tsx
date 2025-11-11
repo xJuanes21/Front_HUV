@@ -6,6 +6,9 @@ import { formsService, type FormRecord } from '@/lib/formService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/router';
 import { Eye, Edit, Trash2, Plus, FileText } from 'lucide-react';
+import Pagination from '@/components/ui/Pagination';
+import { useToast } from '@/components/ui/toast/ToastContext';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 interface UserRecordsTableProps {
   form: any;
@@ -18,6 +21,10 @@ const UserRecordsTable: React.FC<UserRecordsTableProps> = ({ form, documentId })
   const [error, setError] = useState('');
   const { user } = useAuth();
   const router = useRouter();
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const { success, error: toastError } = useToast();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   // Función helper para verificar permisos
   const hasPermission = (permission: 'view' | 'edit' | 'delete'): boolean => {
@@ -25,11 +32,6 @@ const UserRecordsTable: React.FC<UserRecordsTableProps> = ({ form, documentId })
     
     // Si es admin, tiene todos los permisos
     if (user.rol === 'admin') return true;
-    
-    // Si tiene la función canAccessDocument, usarla
-    if (typeof user.canAccessDocument === 'function') {
-      return user.canAccessDocument(documentId, permission);
-    }
     
     // Fallback: verificar permisos básicos basados en el rol
     if (user.rol === 'editor') {
@@ -50,8 +52,10 @@ const UserRecordsTable: React.FC<UserRecordsTableProps> = ({ form, documentId })
       const response = await formsService.getFormRecords(documentId);
       const recordsArray = formsService.normalizeRecordsResponse(response);
       setRecords(recordsArray);
+      success('Registros cargados');
     } catch (err: any) {
       setError('Error al cargar registros: ' + err.message);
+      toastError(err.message || 'Error al cargar registros');
     } finally {
       setLoading(false);
     }
@@ -66,13 +70,14 @@ const UserRecordsTable: React.FC<UserRecordsTableProps> = ({ form, documentId })
   };
 
   const handleDeleteRecord = async (recordId: number) => {
-    if (!confirm('¿Está seguro de eliminar este registro?')) return;
-    
     try {
+      setConfirmDeleteId(recordId);
       await formsService.deleteFormRecord(documentId, recordId);
       loadRecords(); // Recargar la lista
+      success('Registro eliminado');
     } catch (err: any) {
       setError('Error al eliminar registro: ' + err.message);
+      toastError(err.message || 'Error al eliminar registro');
     }
   };
 
@@ -133,7 +138,7 @@ const UserRecordsTable: React.FC<UserRecordsTableProps> = ({ form, documentId })
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {records.map((record) => (
+            {records.slice((page - 1) * pageSize, page * pageSize).map((record) => (
               <tr key={record.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   #{record.id}
@@ -164,7 +169,7 @@ const UserRecordsTable: React.FC<UserRecordsTableProps> = ({ form, documentId })
                   
                   {hasPermission('delete') && (
                     <button
-                      onClick={() => handleDeleteRecord(record.id)}
+                      onClick={() => setConfirmDeleteId(record.id)}
                       className="text-red-600 hover:text-red-900"
                       title="Eliminar registro"
                     >
@@ -189,7 +194,29 @@ const UserRecordsTable: React.FC<UserRecordsTableProps> = ({ form, documentId })
             </p>
           </div>
         )}
+        {records.length > pageSize && (
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={records.length}
+            onPageChange={(p) => setPage(p)}
+            onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+          />
+        )}
       </div>
+      <ConfirmModal
+        isOpen={confirmDeleteId !== null}
+        title="Eliminar registro"
+        description="¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => {
+          if (confirmDeleteId !== null) {
+            handleDeleteRecord(confirmDeleteId).finally(() => setConfirmDeleteId(null));
+          }
+        }}
+      />
     </div>
   );
 };

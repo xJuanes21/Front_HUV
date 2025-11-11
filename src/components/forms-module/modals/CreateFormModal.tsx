@@ -237,7 +237,7 @@ const CreateFormModal: React.FC<CreateFormModalProps> = ({ isOpen, onClose, onSu
                       }`}
                       disabled={isLoading}
                     >
-                      {autoSlug ? '🔗 Auto' : '✏️ Manual'}
+                      {autoSlug ? 'Auto' : 'Manual'}
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">

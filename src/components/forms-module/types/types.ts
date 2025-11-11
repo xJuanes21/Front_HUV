@@ -83,50 +83,42 @@ export interface FormRecord {
 export const COLUMN_TYPES = [
   { 
     value: 'string' as const, 
-    label: 'Texto Corto', 
-    icon: '📝',
+    label: 'Texto Corto',
     description: 'Texto de hasta 255 caracteres'
   },
   { 
     value: 'text' as const, 
-    label: 'Texto Largo', 
-    icon: '📄',
+    label: 'Texto Largo',
     description: 'Texto sin límite de caracteres'
   },
   { 
     value: 'number' as const, 
-    label: 'Número Entero', 
-    icon: '🔢',
+    label: 'Número Entero',
     description: 'Números sin decimales'
   },
   { 
     value: 'decimal' as const, 
-    label: 'Decimal', 
-    icon: '💯',
+    label: 'Decimal',
     description: 'Números con decimales'
   },
   { 
     value: 'date' as const, 
-    label: 'Fecha', 
-    icon: '📅',
+    label: 'Fecha',
     description: 'Solo fecha (YYYY-MM-DD)'
   },
   { 
     value: 'datetime' as const, 
-    label: 'Fecha y Hora', 
-    icon: '🕐',
+    label: 'Fecha y Hora',
     description: 'Fecha con hora completa'
   },
   { 
     value: 'boolean' as const, 
-    label: 'Sí/No', 
-    icon: '✓',
+    label: 'Sí/No',
     description: 'Valor verdadero o falso'
   },
   { 
     value: 'enum' as const, 
-    label: 'Lista de Opciones', 
-    icon: '📋',
+    label: 'Lista de Opciones',
     description: 'Selección de opciones predefinidas'
   }
 ] as const;

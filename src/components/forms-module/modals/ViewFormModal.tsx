@@ -1,5 +1,6 @@
 import React from 'react';
 import { DynamicForm, COLUMN_TYPES } from '../types/types';
+import { getColumnIcon } from '@/components/ui/ColumnIcons';
 
 interface ViewFormModalProps {
   isOpen: boolean;
@@ -11,7 +12,7 @@ const ViewFormModal: React.FC<ViewFormModalProps> = ({ isOpen, form, onClose }) 
   if (!isOpen || !form) return null;
 
   const getTypeInfo = (type: string) => {
-    return COLUMN_TYPES.find(t => t.value === type) || { icon: '📝', label: type };
+    return COLUMN_TYPES.find(t => t.value === type) || { label: type };
   };
 
   return (
@@ -117,10 +118,12 @@ const ViewFormModal: React.FC<ViewFormModalProps> = ({ isOpen, form, onClose }) 
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-700">
+                            {getColumnIcon(column.type, "w-4 h-4")}
+                          </div>
                           <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded">
                             #{index + 1}
                           </span>
-                          <span className="text-xl">{typeInfo.icon}</span>
                           <h5 className="font-semibold text-gray-900">{column.label}</h5>
                           {column.required && (
                             <span className="bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5 rounded">

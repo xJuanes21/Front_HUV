@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import UserMenu from './UserMenu';
+import { Menu, ChevronDown, X } from 'lucide-react';
 
 interface HeaderProps {
   currentSection: string;
   onMenuToggle: () => void;
+  sidebarOpen?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentSection, onMenuToggle }) => {
+const Header: React.FC<HeaderProps> = ({ currentSection, onMenuToggle, sidebarOpen = false }) => {
   const { user, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -34,17 +36,20 @@ const Header: React.FC<HeaderProps> = ({ currentSection, onMenuToggle }) => {
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-blue-800 text-white shadow-lg">
+    <header className="sticky top-0 z-[60] bg-blue-800 text-white shadow-lg">
       <div className="flex items-center justify-between px-4 lg:px-8 py-4">
         {/* Botón menú móvil */}
         <button
           onClick={onMenuToggle}
-          className="lg:hidden p-2 rounded-md hover:bg-blue-700 transition-colors"
-          aria-label="Abrir menú"
+          className="lg:hidden p-2.5 rounded-lg hover:bg-blue-700 active:bg-blue-600 transition-colors touch-manipulation"
+          aria-label={sidebarOpen ? "Cerrar menú" : "Abrir menú"}
+          type="button"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+          {sidebarOpen ? (
+            <X className="w-7 h-7" strokeWidth={2.5} />
+          ) : (
+            <Menu className="w-7 h-7" strokeWidth={2.5} />
+          )}
         </button>
 
         {/* Título dinámico + subtítulo fijo */}
@@ -55,12 +60,6 @@ const Header: React.FC<HeaderProps> = ({ currentSection, onMenuToggle }) => {
 
         {/* Estado + Usuario*/}
         <div className="flex items-center space-x-4">
-          {/* Indicador de estado del sistema */}
-          <div className="hidden md:flex items-center space-x-2 bg-green-500 px-3 py-1 rounded-full">
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium">Sistema Activo</span>
-          </div>
-
           {/* Información del usuario */}
           <div className="flex items-center space-x-3 relative">
             <div className="hidden sm:block text-right">
@@ -82,13 +81,9 @@ const Header: React.FC<HeaderProps> = ({ currentSection, onMenuToggle }) => {
                 <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                   {user ? getInitials(user.nombre) : 'U'}
                 </div>
-                <svg 
-                  className={`w-4 h-4 text-blue-200 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} 
-                  fill="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M7 10l5 5 5-5z" />
-                </svg>
+                <ChevronDown 
+                  className={`w-4 h-4 text-blue-200 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`}
+                />
               </button>
 
               {/* Menú desplegable del usuario */}
