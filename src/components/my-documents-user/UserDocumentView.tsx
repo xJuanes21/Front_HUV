@@ -35,7 +35,8 @@ const UserDocumentsView: React.FC = () => {
             setError('');
 
             // Usar el endpoint específico para documentos del usuario
-            const response = await fetch('http://localhost:8000/api/my-documents', {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL;
+            const response = await fetch(`${API_URL}/api/my-documents`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
                     'Content-Type': 'application/json'
