@@ -33,7 +33,7 @@ const DeleteFormModal: React.FC<DeleteFormModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-100 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
         {/* Header */}
         <div className="bg-gradient-to-r from-red-600 to-red-800 px-6 py-4 rounded-t-xl flex items-center justify-between">
@@ -115,7 +115,7 @@ const DeleteFormModal: React.FC<DeleteFormModalProps> = ({
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder="Escribe ELIMINAR"
-              className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 text-gray-600 focus:ring-red-500 focus:border-red-500"
               disabled={isLoading}
             />
           </div>
