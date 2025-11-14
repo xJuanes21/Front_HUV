@@ -1,0 +1,81 @@
+// lib/auth.ts - VERSIÓN CORREGIDA
+export interface User {
+  id: number;
+  nombre: string;
+  correo: string;
+  telefono: string;
+  rol: 'admin' | 'user' | 'editor';
+}
+
+export interface AuthResponse {
+  user: User;
+  access_token: string;
+  token_type: string;
+}
+
+class AuthService {
+  private baseURL = process.env.NEXT_PUBLIC_API_URL;
+
+  async login(correo: string, password: string): Promise<AuthResponse> {
+    const response = await fetch(`${this.baseURL}/api/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ correo, password }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error en el login');
+    }
+
+    return response.json();
+  }
+
+  async logout(token: string): Promise<void> {
+    await fetch(`${this.baseURL}/api/logout`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  }
+
+  async getCurrentUser(token: string): Promise<User> {
+    const response = await fetch(`${this.baseURL}/api/user`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Error obteniendo usuario');
+    }
+
+    const data = await response.json();
+    return data.user;
+  }
+
+  // ❌ ELIMINAR esta función - Los tokens Sanctum no son JWT
+  // isTokenExpired(token: string): boolean {
+  //   try {
+  //     const payload = JSON.parse(atob(token.split('.')[1]));
+  //     return payload.exp * 1000 < Date.now();
+  //   } catch {
+  //     return true;
+  //   }
+  // }
+
+  // ✅ NUEVO: Verificar token llamando al backend
+  async verifyToken(token: string): Promise<boolean> {
+    try {
+      await this.getCurrentUser(token);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+export const authService = new AuthService();
