@@ -9,6 +9,7 @@ import { DynamicForm, formsService } from '@/lib/formService';
 import { useRouter } from 'next/router';
 import Pagination from '@/components/ui/Pagination';
 import { useToast } from '@/components/ui/toast/ToastContext';
+import { getNotificationCopy, NotificationKey } from '@/constants/notifications';
 
 const FormsTable: React.FC = () => {
   const [forms, setForms] = useState<DynamicForm[]>([]);
@@ -27,6 +28,18 @@ const FormsTable: React.FC = () => {
   const { hasRole } = useAuth();
   const { success, error: toastError } = useToast();
 
+  const emitFormToast = (variant: 'success' | 'error', key: NotificationKey<'forms'>) => {
+    const copy = getNotificationCopy('forms', key);
+    const handler = variant === 'success' ? success : toastError;
+    handler(copy.title, { description: copy.description });
+    if (variant === 'error') {
+      setError(copy.description ?? copy.title);
+    } else {
+      setError('');
+    }
+    return copy;
+  };
+
   // Cargar formularios
   useEffect(() => {
     loadForms();
@@ -38,8 +51,8 @@ const FormsTable: React.FC = () => {
       const formsData = await formsService.getAllForms();
       setForms(formsData);
       setError('');
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar formularios');
+    } catch {
+      emitFormToast('error', 'loadError');
     } finally {
       setLoading(false);
     }
@@ -54,11 +67,10 @@ const FormsTable: React.FC = () => {
       await formsService.deleteForm(formId);
       setForms(prev => prev.filter(form => form.id !== formId));
       closeModals();
-      success('Formulario eliminado');
-    } catch (err: any) {
-      setError(err.message || 'Error al eliminar formulario');
-      toastError(err.message || 'Error al eliminar formulario');
-      throw err;
+      emitFormToast('success', 'deleteSuccess');
+    } catch {
+      const copy = emitFormToast('error', 'deleteError');
+      throw new Error(copy.title);
     } finally {
       setActionLoading(false);
     }
@@ -89,7 +101,7 @@ const FormsTable: React.FC = () => {
   // Success handler para crear
   const handleCreateSuccess = () => {
     loadForms();
-    success('Formulario creado correctamente');
+    emitFormToast('success', 'createSuccess');
   };
 
   // Función para obtener iniciales

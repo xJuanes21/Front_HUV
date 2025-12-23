@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { usersService, type User, type CreateUserData, type UpdateUserData } from '@/lib/usersService';
+import React, { useEffect, useMemo, useState } from 'react';
+import { usersService, CreateUserData, UpdateUserData, User } from '@/lib/usersService';
 import { useAuth } from '@/contexts/AuthContext';
-import DeleteUserModal from './modals/DeleteUserModal';
-import { UserFormData } from './types/types';
 import CreateUserModal from './modals/CreateUserModal';
 import EditUserModal from './modals/EditUserModal';
+import DeleteUserModal from './modals/DeleteUserModal';
+import { UserFormData } from './types/types';
 import { useToast } from '@/components/ui/toast/ToastContext';
+import { getNotificationCopy, NotificationKey } from '@/constants/notifications';
 import Pagination from '@/components/ui/Pagination';
 
 const UsersTable: React.FC = () => {
@@ -28,6 +29,18 @@ const UsersTable: React.FC = () => {
   const { hasRole } = useAuth();
   const { success, error: toastError } = useToast();
 
+  const emitUserToast = (variant: 'success' | 'error', key: NotificationKey<'users'>) => {
+    const copy = getNotificationCopy('users', key);
+    const handler = variant === 'success' ? success : toastError;
+    handler(copy.title, { description: copy.description });
+    if (variant === 'error') {
+      setError(copy.description ?? copy.title);
+    } else {
+      setError('');
+    }
+    return copy;
+  };
+
   const roleNames: { [key: string]: string } = {
     'admin': 'Administrador',
     'user': 'Usuario Regular',
@@ -44,8 +57,9 @@ const UsersTable: React.FC = () => {
       setLoading(true);
       const usersData = await usersService.getAllUsers();
       setUsers(usersData);
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar usuarios');
+      setError('');
+    } catch {
+      emitUserToast('error', 'loadError');
     } finally {
       setLoading(false);
     }
@@ -60,11 +74,10 @@ const UsersTable: React.FC = () => {
       const newUser = await usersService.createUser(formData as CreateUserData);
       setUsers(prev => [...prev, newUser]);
       closeModals();
-      success('Usuario creado correctamente');
-    } catch (err: any) {
-      setError(err.message || 'Error al crear usuario');
-      toastError(err.message || 'Error al crear usuario');
-      throw err;
+      emitUserToast('success', 'createSuccess');
+    } catch {
+      const copy = emitUserToast('error', 'createError');
+      throw new Error(copy.title);
     } finally {
       setActionLoading(false);
     }
@@ -87,11 +100,10 @@ const UsersTable: React.FC = () => {
       const updatedUser = await usersService.updateUser(editingUser.id, updateData);
       setUsers(prev => prev.map(user => user.id === editingUser.id ? updatedUser : user));
       closeModals();
-      success('Usuario actualizado');
-    } catch (err: any) {
-      setError(err.message || 'Error al actualizar usuario');
-      toastError(err.message || 'Error al actualizar usuario');
-      throw err;
+      emitUserToast('success', 'updateSuccess');
+    } catch {
+      const copy = emitUserToast('error', 'updateError');
+      throw new Error(copy.title);
     } finally {
       setActionLoading(false);
     }
@@ -106,11 +118,10 @@ const UsersTable: React.FC = () => {
       await usersService.deleteUser(userId);
       setUsers(prev => prev.filter(user => user.id !== userId));
       closeModals();
-      success('Usuario eliminado');
-    } catch (err: any) {
-      setError(err.message || 'Error al eliminar usuario');
-      toastError(err.message || 'Error al eliminar usuario');
-      throw err;
+      emitUserToast('success', 'deleteSuccess');
+    } catch {
+      const copy = emitUserToast('error', 'deleteError');
+      throw new Error(copy.title);
     } finally {
       setActionLoading(false);
     }

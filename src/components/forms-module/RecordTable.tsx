@@ -6,6 +6,7 @@ import { formsService } from '@/lib/formService';
 import Pagination from '@/components/ui/Pagination';
 import { useToast } from '@/components/ui/toast/ToastContext';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import { getNotificationCopy, NotificationKey } from '@/constants/notifications';
 
 interface RecordsTableProps {
   form: DynamicForm;
@@ -24,6 +25,18 @@ const RecordsTable: React.FC<RecordsTableProps> = ({ form, documentId, onRecords
   const { success, error: toastError } = useToast();
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
+  const emitRecordToast = (variant: 'success' | 'error', key: NotificationKey<'records'>) => {
+    const copy = getNotificationCopy('records', key);
+    const handler = variant === 'success' ? success : toastError;
+    handler(copy.title, { description: copy.description });
+    if (variant === 'error') {
+      setError(copy.description ?? copy.title);
+    } else {
+      setError('');
+    }
+    return copy;
+  };
+
   useEffect(() => {
     loadRecords();
   }, [documentId]);
@@ -36,10 +49,9 @@ const RecordsTable: React.FC<RecordsTableProps> = ({ form, documentId, onRecords
       const recordsData = formsService.normalizeRecordsResponse(response);
       setRecords(recordsData);
       onRecordsChange?.();
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar registros');
+    } catch {
       setRecords([]);
-      toastError(err.message || 'Error al cargar registros');
+      emitRecordToast('error', 'loadError');
     } finally {
       setLoading(false);
     }
@@ -60,10 +72,9 @@ const RecordsTable: React.FC<RecordsTableProps> = ({ form, documentId, onRecords
       await formsService.deleteFormRecord(documentId, recordId);
       setRecords(prev => prev.filter(r => r.id !== recordId));
       onRecordsChange?.();
-      success('Registro eliminado');
-    } catch (err: any) {
-      setError(err.message || 'Error al eliminar registro');
-      toastError(err.message || 'Error al eliminar registro');
+      emitRecordToast('success', 'deleteSuccess');
+    } catch {
+      emitRecordToast('error', 'deleteError');
     } finally {
       setDeletingId(null);
     }

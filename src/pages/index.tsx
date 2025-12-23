@@ -4,6 +4,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/router';
+import { useToast } from '@/components/ui/toast/ToastContext';
+import { getNotificationCopy } from '@/constants/notifications';
 
 export default function Home() {
   const [formData, setFormData] = useState({
@@ -15,13 +17,14 @@ export default function Home() {
 
   const { login, isAuthenticated, user } = useAuth();
   const router = useRouter();
+  const { success, error: toastError } = useToast();
 
-  // Redirigir según el rol si ya está autenticado
+  // Redirigir según el rol solo cuando ya está autenticado
   useEffect(() => {
     if (isAuthenticated && user) {
       redirectByRole(user.rol);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, router]);
 
   const redirectByRole = (rol: string) => {
     if (rol === 'admin') {
@@ -38,9 +41,13 @@ export default function Home() {
 
     try {
       await login(formData.correo, formData.password);
+      const copy = getNotificationCopy('auth', 'loginSuccess');
+      success(copy.title, { description: copy.description });
       // La redirección se manejará en el useEffect
-    } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión');
+    } catch {
+      const copy = getNotificationCopy('auth', 'loginError');
+      setError(copy.description ?? copy.title);
+      toastError(copy.title, { description: copy.description });
     } finally {
       setIsLoading(false);
     }

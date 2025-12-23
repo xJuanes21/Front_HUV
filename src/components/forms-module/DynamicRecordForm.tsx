@@ -6,6 +6,8 @@ import { formsService } from '@/lib/formService';
 import { getColumnIcon } from '@/components/ui/ColumnIcons';
 import { AlertCircle, Save, X, Loader2 } from 'lucide-react';
 import { COLUMN_TYPES } from './types/types';
+import { useToast } from '@/components/ui/toast/ToastContext';
+import { getNotificationCopy, NotificationKey } from '@/constants/notifications';
 
 interface DynamicRecordFormProps {
   form: DynamicForm;
@@ -22,6 +24,14 @@ const DynamicRecordForm: React.FC<DynamicRecordFormProps> = ({ form, documentId,
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState('');
+  const { success: toastSuccess, error: toastError } = useToast();
+
+  const emitRecordToast = (variant: 'success' | 'error', key: NotificationKey<'records'>) => {
+    const copy = getNotificationCopy('records', key);
+    const handler = variant === 'success' ? toastSuccess : toastError;
+    handler(copy.title, { description: copy.description });
+    return copy;
+  };
 
   useEffect(() => {
     if (isEditing && recordId) {
@@ -65,6 +75,7 @@ const DynamicRecordForm: React.FC<DynamicRecordFormProps> = ({ form, documentId,
       }
     } catch (err: any) {
       setGeneralError(err.message || 'Error al cargar registro');
+      emitRecordToast('error', 'loadError');
     } finally {
       setLoading(false);
     }
@@ -118,13 +129,16 @@ const DynamicRecordForm: React.FC<DynamicRecordFormProps> = ({ form, documentId,
 
       if (isEditing && recordId) {
         await formsService.updateFormRecord(documentId, recordId, dataToSave);
+        emitRecordToast('success', 'updateSuccess');
       } else {
         await formsService.createFormRecord(documentId, dataToSave);
+        emitRecordToast('success', 'createSuccess');
       }
 
       router.push(`/dashboard-admin/documents/${documentId}`);
     } catch (err: any) {
       setGeneralError(err.message || 'Error al guardar registro');
+      emitRecordToast('error', isEditing ? 'updateError' : 'createError');
     } finally {
       setSaving(false);
     }
