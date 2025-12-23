@@ -1,7 +1,7 @@
 // lib/formService.ts
 import { CreateFormData, DynamicForm, FormRecord } from "@/components/forms-module/types/types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Tipo para la respuesta de registros del API
 interface RecordsResponse {

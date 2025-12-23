@@ -14,10 +14,10 @@ export interface AuthResponse {
 }
 
 class AuthService {
-  private baseURL = 'http://localhost:8000/api';
+  private baseURL = process.env.NEXT_PUBLIC_API_URL;
 
   async login(correo: string, password: string): Promise<AuthResponse> {
-    const response = await fetch(`${this.baseURL}/login`, {
+    const response = await fetch(`${this.baseURL}/api/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -34,7 +34,7 @@ class AuthService {
   }
 
   async logout(token: string): Promise<void> {
-    await fetch(`${this.baseURL}/logout`, {
+    await fetch(`${this.baseURL}/api/logout`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -43,7 +43,7 @@ class AuthService {
   }
 
   async getCurrentUser(token: string): Promise<User> {
-    const response = await fetch(`${this.baseURL}/user`, {
+    const response = await fetch(`${this.baseURL}/api/user`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },

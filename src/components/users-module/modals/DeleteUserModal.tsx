@@ -20,8 +20,19 @@ const DeleteUserModal: React.FC<DeleteUserModalProps> = ({
     }
   };
 
-  const getInitials = (name: string): string => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const getInitials = (name?: string | null): string => {
+    if (!name) return '?';
+
+    const trimmed = name.trim();
+    if (!trimmed) return '?';
+
+    const initials = trimmed
+      .split(/\s+/)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
+
+    return initials.slice(0, 2) || '?';
   };
 
   return (

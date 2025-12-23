@@ -45,7 +45,7 @@ export interface UpdateUserPermissionsData {
 }
 
 class UsersService {
-  private baseURL = 'http://localhost:8000/api';
+  private baseURL = process.env.NEXT_PUBLIC_API_URL;
 
   private async getAuthHeaders() {
     const token = localStorage.getItem('auth_token');
@@ -58,7 +58,7 @@ class UsersService {
   }
 
   async getAllUsers(): Promise<User[]> {
-    const response = await fetch(`${this.baseURL}/users`, {
+    const response = await fetch(`${this.baseURL}/api/users`, {
       headers: await this.getAuthHeaders(),
     });
 
@@ -70,7 +70,7 @@ class UsersService {
   }
 
   async getUserById(id: number): Promise<User> {
-    const response = await fetch(`${this.baseURL}/users/${id}`, {
+    const response = await fetch(`${this.baseURL}/api/users/${id}`, {
       headers: await this.getAuthHeaders(),
     });
 
@@ -82,7 +82,7 @@ class UsersService {
   }
 
   async createUser(userData: CreateUserData): Promise<User> {
-    const response = await fetch(`${this.baseURL}/users`, {
+    const response = await fetch(`${this.baseURL}/api/users`, {
       method: 'POST',
       headers: await this.getAuthHeaders(),
       body: JSON.stringify(userData),
@@ -106,7 +106,7 @@ class UsersService {
   }
 
   async updateUser(id: number, userData: UpdateUserData): Promise<User> {
-    const response = await fetch(`${this.baseURL}/users/${id}`, {
+    const response = await fetch(`${this.baseURL}/api/users/${id}`, {
       method: 'PUT',
       headers: await this.getAuthHeaders(),
       body: JSON.stringify(userData),
@@ -121,7 +121,7 @@ class UsersService {
   }
 
   async deleteUser(id: number): Promise<void> {
-    const response = await fetch(`${this.baseURL}/users/${id}`, {
+    const response = await fetch(`${this.baseURL}/api/users/${id}`, {
       method: 'DELETE',
       headers: await this.getAuthHeaders(),
     });
@@ -134,7 +134,7 @@ class UsersService {
   // 🔽 NUEVOS MÉTODOS PARA PERMISOS DE DOCUMENTOS 🔽
 
   async getUserDocumentPermissions(userId: number): Promise<DocumentPermission[]> {
-    const response = await fetch(`${this.baseURL}/users/${userId}/document-permissions`, {
+    const response = await fetch(`${this.baseURL}/api/users/${userId}/document-permissions`, {
       headers: await this.getAuthHeaders(),
     });
 
@@ -147,7 +147,7 @@ class UsersService {
   }
 
   async updateUserDocumentPermissions(userId: number, permissionsData: UpdateUserPermissionsData): Promise<DocumentPermission[]> {
-    const response = await fetch(`${this.baseURL}/users/${userId}/document-permissions`, {
+    const response = await fetch(`${this.baseURL}/api/users/${userId}/document-permissions`, {
       method: 'PUT',
       headers: await this.getAuthHeaders(),
       body: JSON.stringify(permissionsData),
@@ -163,7 +163,7 @@ class UsersService {
   }
 
   async deleteUserDocumentPermission(userId: number, documentId: number): Promise<void> {
-    const response = await fetch(`${this.baseURL}/users/${userId}/document-permissions/${documentId}`, {
+    const response = await fetch(`${this.baseURL}/api/users/${userId}/document-permissions/${documentId}`, {
       method: 'DELETE',
       headers: await this.getAuthHeaders(),
     });

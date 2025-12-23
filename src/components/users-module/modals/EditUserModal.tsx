@@ -73,7 +73,19 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         <div className="bg-gray-50 border-b border-gray-200 p-4">
           <div className="flex items-center">
             <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium text-lg">
-              {user.nombre.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+              {(() => {
+                const name = user?.nombre ?? '';
+                const trimmed = name.trim();
+                if (!trimmed) return '?';
+
+                const initials = trimmed
+                  .split(/\s+/)
+                  .map((n) => n[0])
+                  .join('')
+                  .toUpperCase();
+
+                return initials.slice(0, 2) || '?';
+              })()}
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-900">{user.nombre}</p>
